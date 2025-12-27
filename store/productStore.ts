@@ -1,4 +1,7 @@
 import { create } from 'zustand';
+import axios from 'axios';
+import { toast } from 'sonner-native';
+import { ENDPOINTS } from '../constants/api';
 
 export interface Product {
   id: string;
@@ -11,46 +14,69 @@ export interface Product {
 
 interface ProductState {
   products: Product[];
-  addProduct: (product: Product) => void;
-  updateProduct: (id: string, updatedData: Partial<Product>) => void;
-  deleteProduct: (id: string) => void;
+  isLoading: boolean;
+  fetchProducts: () => Promise<void>;
+  addProduct: (product: Omit<Product, 'id'>) => Promise<void>;
+  updateProduct: (id: string, data: Partial<Product>) => Promise<void>;
+  deleteProduct: (id: string) => Promise<void>;
 }
 
-// Data awal dummy
-const INITIAL_PRODUCTS: Product[] = [
-  { 
-    id: '1', 
-    name: 'Kopi Arabika Gayo', 
-    price: 75000, 
-    image: 'https://via.placeholder.com/300', 
-    description: 'Kopi nikmat asli dataran tinggi Gayo.', 
-    category: 'Minuman' 
-  },
-  { 
-    id: '2', 
-    name: 'Keripik Pisang Coklat', 
-    price: 15000, 
-    image: 'https://via.placeholder.com/300', 
-    description: 'Camilan renyah dengan lumeran coklat premium.', 
-    category: 'Makanan' 
-  },
-  { 
-    id: '3', 
-    name: 'Sambal Roa Botol', 
-    price: 35000, 
-    image: 'https://via.placeholder.com/300', 
-    description: 'Pedas nendang cocok untuk teman nasi.', 
-    category: 'Bumbu' 
-  },
-];
+export const useProductStore = create<ProductState>((set, get) => ({
+  products: [],
+  isLoading: false,
 
-export const useProductStore = create<ProductState>((set) => ({
-  products: INITIAL_PRODUCTS,
-  addProduct: (product) => set((state) => ({ products: [...state.products, product] })),
-  updateProduct: (id, data) => set((state) => ({
-    products: state.products.map((p) => (p.id === id ? { ...p, ...data } : p)),
-  })),
-  deleteProduct: (id) => set((state) => ({
-    products: state.products.filter((p) => p.id !== id),
-  })),
+  // 1. Ambil Data dari MongoDB
+  fetchProducts: async () => {
+    set({ isLoading: true });
+    try {
+      const response = await axios.get(ENDPOINTS.products);
+      set({ products: response.data });
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal mengambil data produk");
+    } finally {
+      set({ isLoading: false });
+    }
+  },
+
+  // 2. Tambah Data ke MongoDB
+  addProduct: async (newProductData) => {
+    try {
+      const response = await axios.post(ENDPOINTS.products, newProductData);
+      // Update state lokal agar tidak perlu refresh
+      set((state) => ({ products: [...state.products, response.data] }));
+      toast.success("Produk tersimpan di Database!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menyimpan produk");
+    }
+  },
+
+  // 3. Update Data
+  updateProduct: async (id, updatedData) => {
+    try {
+      const response = await axios.put(`${ENDPOINTS.products}/${id}`, updatedData);
+      set((state) => ({
+        products: state.products.map((p) => (p.id === id ? response.data : p)),
+      }));
+      toast.success("Update berhasil!");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal update produk");
+    }
+  },
+
+  // 4. Hapus Data
+  deleteProduct: async (id) => {
+    try {
+      await axios.delete(`${ENDPOINTS.products}/${id}`);
+      set((state) => ({
+        products: state.products.filter((p) => p.id !== id),
+      }));
+      toast.success("Produk dihapus permanen.");
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal menghapus produk");
+    }
+  },
 }));

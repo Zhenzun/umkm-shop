@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Plus, Star, MessageCircle } from 'lucide-react-native';
@@ -14,7 +14,12 @@ const CATEGORIES = ["Semua", "Makanan", "Minuman", "Kerajinan", "Pakaian"];
 
 export default function ModernHomeScreen() {
   const router = useRouter();
-  const { products } = useProductStore();
+  const { products, fetchProducts } = useProductStore();
+
+  useEffect(() => {
+    fetchProducts();
+  }, []);
+  
   const addToCart = useCartStore((state) => state.addToCart);
   
   // Hook untuk menghitung jarak aman (Notch/Poni HP)
@@ -88,6 +93,28 @@ export default function ModernHomeScreen() {
                 <Text className="text-primary text-xs font-bold">Lihat Semua</Text>
               </TouchableOpacity>
             </View>
+            {role === 'admin' && (
+              <View className="absolute bottom-6 right-6 items-end gap-3">
+                {/* Tombol Lihat Pesanan */}
+                <TouchableOpacity 
+                  className="bg-green-600 w-12 h-12 rounded-full items-center justify-center shadow-lg"
+                  onPress={() => router.push('/admin/orders')}
+                >
+                  <View>
+                      {/* Gunakan Icon Clipboard/List */}
+                      <Text className="text-white font-bold text-xs">ORD</Text> 
+                  </View>
+                </TouchableOpacity>
+
+                {/* Tombol Tambah Produk (Existing) */}
+                <TouchableOpacity 
+                  className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-lg"
+                  onPress={() => router.push('/admin/manage-product')}
+                >
+                  <Plus color="white" size={24} />
+                </TouchableOpacity>
+              </View>
+            )}
           </View>
         )}
 

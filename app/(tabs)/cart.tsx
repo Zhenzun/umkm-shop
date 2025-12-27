@@ -3,35 +3,52 @@ import { View, Text, FlatList, Image, TouchableOpacity, Linking, SafeAreaView } 
 import { Trash2, Minus, Plus, ShoppingBag } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 import { useCartStore } from '../../store/cartStore';
+import axios from 'axios';
+import { ENDPOINTS } from '../../constants/api';
 
 export default function CartScreen() {
   const { items, removeFromCart, addToCart, totalPrice, clearCart } = useCartStore();
+  const [isProcessing, setIsProcessing] = useState(false);
 
   // Fungsi Logika Checkout WhatsApp
-  const handleCheckout = () => {
-    if (items.length === 0) {
-      toast.error("Keranjang kosong!");
-      return;
+  const handleCheckout = async () => {
+    if (items.length === 0) return;
+    
+    setIsProcessing(true);
+    try {
+      // 1. Siapkan Data
+      const payload = {
+        customerName: "Pelanggan App", // Nanti bisa diganti nama asli jika sudah ada Login
+        items: items.map(i => ({ name: i.name, qty: i.quantity, price: i.price })),
+        totalPrice: totalPrice(),
+        status: 'Baru'
+      };
+
+      // 2. Kirim ke Backend MongoDB
+      const response = await axios.post(ENDPOINTS.orders, payload);
+      const orderId = response.data.id; // Dapat ID Unik dari DB
+      const shortId = orderId.substring(orderId.length - 5).toUpperCase(); // Ambil 5 karakter terakhir biar keren
+
+      // 3. Format Pesan WA dengan Order ID
+      const phoneNumber = "628123456789"; 
+      let message = `Halo Admin, Order Baru *#${shortId}*\n\n`;
+      items.forEach((item, index) => {
+        message += `${index + 1}. ${item.name} x${item.quantity}\n`;
+      });
+      message += `\nTotal: *Rp ${totalPrice().toLocaleString()}*`;
+      message += `\nMohon diproses. Terima kasih!`;
+
+      // 4. Buka WA & Bersihkan Keranjang
+      Linking.openURL(`whatsapp://send?text=${encodeURIComponent(message)}&phone=${phoneNumber}`);
+      clearCart();
+      toast.success("Pesanan tercatat di sistem!");
+
+    } catch (error) {
+      console.error(error);
+      toast.error("Gagal membuat pesanan (Cek koneksi server)");
+    } finally {
+      setIsProcessing(false);
     }
-
-    const phoneNumber = "6281234567890"; // Ganti dengan Nomor WA Penjual
-    
-    // Format Pesan Rapi
-    let message = `Halo Admin, saya ingin memesan:\n\n`;
-    items.forEach((item, index) => {
-      message += `${index + 1}. ${item.name} x${item.quantity} - Rp ${(item.price * item.quantity).toLocaleString()}\n`;
-    });
-    message += `\n*Total: Rp ${totalPrice().toLocaleString()}*`;
-    message += `\n\nMohon diproses, Terima kasih.`;
-
-    const url = `whatsapp://send?text=${encodeURIComponent(message)}&phone=${phoneNumber}`;
-
-    Linking.openURL(url).catch(() => {
-      toast.error("WhatsApp tidak terinstall di HP ini.");
-    });
-    
-    // Opsional: Kosongkan keranjang setelah checkout
-    // clearCart(); 
   };
 
   // Kurangi quantity (Logic lokal untuk UI minus)
@@ -94,10 +111,15 @@ export default function CartScreen() {
             </View>
             
             <TouchableOpacity 
-              className="bg-green-600 py-4 rounded-xl items-center flex-row justify-center gap-2 active:bg-green-700"
+              className={`bg-green-600 py-4 rounded-xl items-center flex-row justify-center gap-2 ${isProcessing ? 'opacity-50' : ''}`}
               onPress={handleCheckout}
+              disabled={isProcessing}
             >
-              <Text className="text-white font-bold text-lg">Pesan via WhatsApp</Text>
+              {isProcessing ? (
+                <ActivityIndicator color="white" />
+              ) : (
+                <Text className="text-white font-bold text-lg">Pesan via WhatsApp</Text>
+              )}
             </TouchableOpacity>
           </View>
         </>

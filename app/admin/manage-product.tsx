@@ -48,39 +48,38 @@ export default function ManageProductScreen() {
       allowsEditing: true,    // Bisa crop/potong
       aspect: [1, 1],         // Rasio kotak (Instagram style)
       quality: 0.5,           // Kompresi kualitas agar tidak berat (0 - 1)
+      base64: true,
     });
 
     // 3. Simpan URI Gambar jika tidak dibatalkan
     if (!result.canceled) {
+      const base64Img = `data:image/jpeg;base64,${result.assets[0].base64}`;
       setImage(result.assets[0].uri);
       toast.success("Foto berhasil dipilih!");
     }
   };
 
-  const handleSave = () => {
+  const handleSave = async () => { // Jadikan Async
     if (!name || !price || !image) {
-      toast.error("Nama, Harga, dan Foto wajib diisi!");
+      toast.error("Lengkapi data!");
       return;
     }
 
     const payload = {
       name,
       price: parseInt(price),
-      image, // Ini sekarang berisi path lokal file (file:///...)
-      description: description || "Deskripsi standar UMKM",
+      image, // Ini sekarang berisi string Base64 panjang
+      description,
       category
     };
 
+    // Panggil Store (yang sekarang sudah connect ke MongoDB)
     if (isEditMode) {
-      updateProduct(params.id as string, payload);
-      toast.success("Produk diperbarui!");
+      await updateProduct(params.id as string, payload);
     } else {
-      addProduct({
-        id: Date.now().toString(),
-        ...payload
-      });
-      toast.success("Produk ditambahkan!");
+      await addProduct(payload);
     }
+    
     router.back();
   };
 
