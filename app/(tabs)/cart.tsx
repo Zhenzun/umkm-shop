@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
-import { View, Text, FlatList, Image, TouchableOpacity, Linking, SafeAreaView } from 'react-native';
-import { Trash2, Minus, Plus, ShoppingBag, ActivityIndicator, displayName } from 'lucide-react-native';
+import { View, Text, FlatList, Image, TouchableOpacity, Linking, ActivityIndicator } from 'react-native';
+import { Trash2, Minus, Plus, ShoppingBag } from 'lucide-react-native';
 import { toast } from 'sonner-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Import Hook
 import { useCartStore } from '../../store/cartStore';
 import axios from 'axios';
 import { ENDPOINTS } from '../../constants/api';
@@ -9,6 +10,9 @@ import { ENDPOINTS } from '../../constants/api';
 export default function CartScreen() {
   const { items, removeFromCart, addToCart, totalPrice, clearCart } = useCartStore();
   const [isProcessing, setIsProcessing] = useState(false);
+  
+  // Hook untuk jarak aman notch HP
+  const insets = useSafeAreaInsets();
 
   // Fungsi Logika Checkout WhatsApp
   const handleCheckout = async () => {
@@ -51,17 +55,9 @@ export default function CartScreen() {
     }
   };
 
-  // Kurangi quantity (Logic lokal untuk UI minus)
-  const decreaseQuantity = (id: string) => {
-    // Logika pengurangan bisa ditambahkan di store jika ingin lebih kompleks
-    // Di sini kita pakai remove jika sisa 1, atau kurangi logic manual (PR untuk state management)
-    removeFromCart(id); 
-    toast.info("Item dihapus (Implementasi minus qty perlu update store)");
-  };
-
   return (
-    // Gunakan SafeAreaView agar Header Keranjang tidak tertutup Notch/Poni HP
-    <SafeAreaView className="flex-1 bg-white pt-8"> 
+    // PERBAIKAN: Ganti SafeAreaView dengan View + style paddingTop
+    <View className="flex-1 bg-white" style={{ paddingTop: insets.top }}> 
       <View className="p-4 border-b border-gray-100">
         <Text className="text-2xl font-bold text-primary">Keranjang Belanja</Text>
       </View>
@@ -88,13 +84,11 @@ export default function CartScreen() {
 
                 <View className="flex-row items-center gap-3">
                   <View className="flex-row items-center bg-gray-50 rounded-lg">
-                    {/* Logika plus minus sederhana */}
                     <TouchableOpacity onPress={() => addToCart(item)} className="p-2">
                       <Plus size={16} color="#0F172A" />
                     </TouchableOpacity>
                     <Text className="font-bold w-4 text-center">{item.quantity}</Text>
                     <TouchableOpacity onPress={() => removeFromCart(item.id)} className="p-2">
-                       {/* Sebaiknya buat fungsi decrease di store, saat ini remove */}
                       <Minus size={16} color="#0F172A" />
                     </TouchableOpacity>
                   </View>
@@ -124,6 +118,6 @@ export default function CartScreen() {
           </View>
         </>
       )}
-    </SafeAreaView>
+    </View>
   );
 }
