@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import axios from 'axios';
 import { toast } from 'sonner-native';
-import { ENDPOINTS } from '../constants/api';
+import { ENDPOINTS } from '../constants/api'; // Pastikan file ini ada & IP benar
 
 export interface Product {
   id: string;
@@ -25,58 +25,59 @@ export const useProductStore = create<ProductState>((set, get) => ({
   products: [],
   isLoading: false,
 
-  // 1. Ambil Data dari MongoDB
+  // 1. AMBIL DATA DARI SERVER
   fetchProducts: async () => {
     set({ isLoading: true });
     try {
       const response = await axios.get(ENDPOINTS.products);
       set({ products: response.data });
     } catch (error) {
-      console.error(error);
-      toast.error("Gagal mengambil data produk");
+      console.error("Fetch Error:", error);
+      // Jangan spam toast error saat awal load, cukup log saja
     } finally {
       set({ isLoading: false });
     }
   },
 
-  // 2. Tambah Data ke MongoDB
+  // 2. TAMBAH PRODUK KE DATABASE
   addProduct: async (newProductData) => {
     try {
       const response = await axios.post(ENDPOINTS.products, newProductData);
-      // Update state lokal agar tidak perlu refresh
+      // Update state lokal langsung agar terasa cepat
       set((state) => ({ products: [...state.products, response.data] }));
-      toast.success("Produk tersimpan di Database!");
+      toast.success("Produk tersimpan!");
     } catch (error) {
       console.error(error);
-      toast.error("Gagal menyimpan produk");
+      toast.error("Gagal menyimpan produk. Cek koneksi server.");
+      throw error; // Lempar error agar komponen tahu
     }
   },
 
-  // 3. Update Data
+  // 3. UPDATE PRODUK
   updateProduct: async (id, updatedData) => {
     try {
       const response = await axios.put(`${ENDPOINTS.products}/${id}`, updatedData);
       set((state) => ({
         products: state.products.map((p) => (p.id === id ? response.data : p)),
       }));
-      toast.success("Update berhasil!");
+      toast.success("Produk diupdate!");
     } catch (error) {
       console.error(error);
-      toast.error("Gagal update produk");
+      toast.error("Gagal update produk.");
     }
   },
 
-  // 4. Hapus Data
+  // 4. HAPUS PRODUK
   deleteProduct: async (id) => {
     try {
       await axios.delete(`${ENDPOINTS.products}/${id}`);
       set((state) => ({
         products: state.products.filter((p) => p.id !== id),
       }));
-      toast.success("Produk dihapus permanen.");
+      toast.success("Produk dihapus.");
     } catch (error) {
       console.error(error);
-      toast.error("Gagal menghapus produk");
+      toast.error("Gagal menghapus produk.");
     }
   },
 }));
