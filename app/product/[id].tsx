@@ -1,7 +1,7 @@
 import React from 'react';
 import { View, Text, Image, ScrollView, TouchableOpacity } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
-import { Minus, Plus, ShoppingBag, ArrowLeft } from 'lucide-react-native';
+import { Minus, Plus, ShoppingBag, ArrowLeft, MessageCircle, ShoppingCart } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 import { StatusBar } from 'expo-status-bar';
 

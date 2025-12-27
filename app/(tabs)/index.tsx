@@ -1,30 +1,31 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, ScrollView, Linking } from 'react-native';
 import { useRouter } from 'expo-router';
-import { Plus, Star, MessageCircle } from 'lucide-react-native';
+import { Plus, Star, MessageCircle, ShieldCheck, User } from 'lucide-react-native'; // Tambah icon Shield/User
 import { StatusBar } from 'expo-status-bar';
-import { useSafeAreaInsets } from 'react-native-safe-area-context'; // Ganti import component jadi hook
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { toast } from 'sonner-native';
 
 import HomeHeader from '../../components/HomeHeader';
 import { useProductStore } from '../../store/productStore';
 import { useCartStore } from '../../store/cartStore';
+import { useAuthStore } from '../../store/authStore'; // <--- 1. WAJIB IMPORT INI
 
 const CATEGORIES = ["Semua", "Makanan", "Minuman", "Kerajinan", "Pakaian"];
 
 export default function ModernHomeScreen() {
   const router = useRouter();
   const { products, fetchProducts } = useProductStore();
+  
+  // 2. AMBIL ROLE DARI STORE
+  const { role, setRole } = useAuthStore(); 
 
   useEffect(() => {
     fetchProducts();
   }, []);
   
   const addToCart = useCartStore((state) => state.addToCart);
-  
-  // Hook untuk menghitung jarak aman (Notch/Poni HP)
   const insets = useSafeAreaInsets();
-
   const [selectedCategory, setSelectedCategory] = useState("Semua");
 
   const filteredProducts = products.filter(p => 
@@ -32,7 +33,6 @@ export default function ModernHomeScreen() {
   );
 
   return (
-    // GANTI SafeAreaView dengan View biasa + style paddingTop
     <View className="flex-1 bg-background" style={{ paddingTop: insets.top }}>
       <StatusBar style="dark" />
       <HomeHeader />
@@ -47,6 +47,25 @@ export default function ModernHomeScreen() {
         
         ListHeaderComponent={() => (
           <View className="mb-4">
+            
+            {/* --- FITUR SEMENTARA: SWITCH ROLE (User <-> Admin) --- */}
+            <TouchableOpacity 
+              onPress={() => {
+                const newRole = role === 'admin' ? 'user' : 'admin';
+                setRole(newRole);
+                toast.info(`Mode berubah: ${newRole.toUpperCase()}`);
+              }}
+              className={`mx-4 mt-2 p-2 rounded-lg flex-row items-center justify-center gap-2 border ${
+                role === 'admin' ? 'bg-red-50 border-red-200' : 'bg-blue-50 border-blue-200'
+              }`}
+            >
+              {role === 'admin' ? <ShieldCheck size={16} color="#DC2626" /> : <User size={16} color="#2563EB" />}
+              <Text className={`text-xs font-bold ${role === 'admin' ? 'text-red-700' : 'text-blue-700'}`}>
+                Mode Saat Ini: {role.toUpperCase()} (Ketuk untuk Ganti)
+              </Text>
+            </TouchableOpacity>
+            {/* ----------------------------------------------------- */}
+
             {/* 1. Banner Promo */}
             <View className="px-4 mt-4">
               <View className="bg-primary rounded-2xl p-6 relative overflow-hidden h-40 justify-center shadow-lg shadow-blue-200">
@@ -93,28 +112,6 @@ export default function ModernHomeScreen() {
                 <Text className="text-primary text-xs font-bold">Lihat Semua</Text>
               </TouchableOpacity>
             </View>
-            {role === 'admin' && (
-              <View className="absolute bottom-6 right-6 items-end gap-3">
-                {/* Tombol Lihat Pesanan */}
-                <TouchableOpacity 
-                  className="bg-green-600 w-12 h-12 rounded-full items-center justify-center shadow-lg"
-                  onPress={() => router.push('/admin/orders')}
-                >
-                  <View>
-                      {/* Gunakan Icon Clipboard/List */}
-                      <Text className="text-white font-bold text-xs">ORD</Text> 
-                  </View>
-                </TouchableOpacity>
-
-                {/* Tombol Tambah Produk (Existing) */}
-                <TouchableOpacity 
-                  className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-lg"
-                  onPress={() => router.push('/admin/manage-product')}
-                >
-                  <Plus color="white" size={24} />
-                </TouchableOpacity>
-              </View>
-            )}
           </View>
         )}
 
@@ -154,13 +151,36 @@ export default function ModernHomeScreen() {
         )}
       />
 
-      {/* Floating WhatsApp Button */}
-      <TouchableOpacity 
-        className="absolute bottom-6 right-6 bg-[#25D366] w-14 h-14 rounded-full items-center justify-center shadow-lg shadow-green-200 z-50"
-        onPress={() => Linking.openURL('whatsapp://send?phone=628123456789')}
-      >
-        <MessageCircle size={28} color="white" />
-      </TouchableOpacity>
+      {/* Floating Buttons Khusus Admin */}
+      {role === 'admin' && (
+        <View className="absolute bottom-24 right-6 items-end gap-3 z-50">
+          {/* Tombol Lihat Pesanan */}
+          <TouchableOpacity 
+            className="bg-green-600 w-12 h-12 rounded-full items-center justify-center shadow-lg shadow-green-200"
+            onPress={() => router.push('/admin/orders')}
+          >
+            <Text className="text-white font-bold text-[10px]">ORD</Text> 
+          </TouchableOpacity>
+
+          {/* Tombol Tambah Produk */}
+          <TouchableOpacity 
+            className="bg-primary w-14 h-14 rounded-full items-center justify-center shadow-lg shadow-blue-200"
+            onPress={() => router.push('/admin/manage-product')}
+          >
+            <Plus color="white" size={24} />
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {/* Floating WhatsApp Button (Hanya User) */}
+      {role !== 'admin' && (
+        <TouchableOpacity 
+          className="absolute bottom-6 right-6 bg-[#25D366] w-14 h-14 rounded-full items-center justify-center shadow-lg shadow-green-200 z-50"
+          onPress={() => Linking.openURL('whatsapp://send?phone=6282180760043')}
+        >
+          <MessageCircle size={28} color="white" />
+        </TouchableOpacity>
+      )}
     </View>
   );
 }

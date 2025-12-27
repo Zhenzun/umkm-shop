@@ -1,6 +1,6 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { View, Text, FlatList, Image, TouchableOpacity, Linking, SafeAreaView } from 'react-native';
-import { Trash2, Minus, Plus, ShoppingBag } from 'lucide-react-native';
+import { Trash2, Minus, Plus, ShoppingBag, ActivityIndicator, displayName } from 'lucide-react-native';
 import { toast } from 'sonner-native';
 import { useCartStore } from '../../store/cartStore';
 import axios from 'axios';
@@ -30,7 +30,7 @@ export default function CartScreen() {
       const shortId = orderId.substring(orderId.length - 5).toUpperCase(); // Ambil 5 karakter terakhir biar keren
 
       // 3. Format Pesan WA dengan Order ID
-      const phoneNumber = "628123456789"; 
+      const phoneNumber = "6285788011026"; 
       let message = `Halo Admin, Order Baru *#${shortId}*\n\n`;
       items.forEach((item, index) => {
         message += `${index + 1}. ${item.name} x${item.quantity}\n`;
